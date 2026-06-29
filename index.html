@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Projects — personal tracker</title>
+<style>
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --ink:#1b2230; --soft:#49526a; --muted:#8a93a6;
+  --line:#e7e9f0; --line2:#eef0f5; --accent:#4338ca; --accentsoft:#eef0fd;
+  --green:#1f8a55; --greenbg:#e7f5ee; --blue:#2f6fd0; --bluebg:#e8f0fb;
+  --amber:#b6791d; --amberbg:#fbf1dd; --grey:#7a8295; --greybg:#eef0f4;
+  --violet:#7c4dd6; --violetbg:#f1ecfb; --red:#c0392b; --redbg:#fdeceb;
+  --orange:#c2560f; --orangebg:#fdeede;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.tnum{font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer}
+[contenteditable]{outline:none;border-radius:4px}
+[contenteditable]:hover{background:#f3f4f9}
+[contenteditable]:focus{background:#fff;box-shadow:0 0 0 2px var(--accentsoft)}
+[contenteditable][data-ph]:empty::before{content:attr(data-ph);color:var(--muted);font-style:italic}
+
+.wrap{max-width:1000px;margin:0 auto;padding:38px 24px 90px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.head h1{font-size:1.9rem;font-weight:800;letter-spacing:-.02em}
+.head h1 .dot{color:var(--accent)}
+.head .sub{color:var(--muted);font-size:.92rem;margin-top:3px}
+.head .today{font-size:.82rem;color:var(--muted);text-align:right;white-space:nowrap}
+
+/* tabs */
+.tabs{display:flex;gap:4px;margin:22px 0 18px;border-bottom:1.5px solid var(--line);flex-wrap:wrap}
+.tab{background:none;border:0;padding:9px 14px;font-size:.92rem;font-weight:700;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-1.5px}
+.tab:hover{color:var(--soft)}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.tab .pip{font-size:.7rem;background:var(--accentsoft);color:var(--accent);border-radius:999px;padding:1px 7px;margin-left:5px;font-weight:800}
+.tab .pip.warn{background:var(--orangebg);color:var(--orange)}
+
+/* buttons */
+.btn{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:8px 14px;font-size:.84rem;font-weight:700}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.solid{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.solid:hover{background:#3730a3;color:#fff}
+.btn.sm{padding:5px 10px;font-size:.78rem;border-radius:8px}
+.btn.tiny{padding:3px 8px;font-size:.74rem;border-radius:7px}
+
+/* section headers */
+.sech{display:flex;align-items:center;gap:9px;margin:24px 0 11px}
+.sech:first-child{margin-top:4px}
+.sech h2{font-size:1.02rem;color:var(--ink)}
+.sech .ct{font-size:.78rem;color:var(--muted);font-weight:600}
+.sech .ln{flex:1;height:1px;background:var(--line)}
+.lead{color:var(--soft);font-size:.86rem;margin:0 0 14px;max-width:780px}
+
+/* status pill */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:999px;cursor:pointer;border:1px solid transparent;white-space:nowrap;user-select:none}
+.pill .d{width:7px;height:7px;border-radius:50%}
+.st-active{background:var(--greenbg);color:var(--green)}.st-active .d{background:var(--green)}
+.st-next{background:var(--bluebg);color:var(--blue)}.st-next .d{background:var(--blue)}
+.st-hold{background:var(--amberbg);color:var(--amber)}.st-hold .d{background:var(--amber)}
+.st-done{background:var(--greybg);color:var(--grey)}.st-done .d{background:var(--grey)}
+.st-idea{background:var(--violetbg);color:var(--violet)}.st-idea .d{background:var(--violet)}
+.pill:hover{border-color:rgba(0,0,0,.12)}
+.pdot{width:9px;height:9px;border-radius:50%;flex:none;cursor:pointer;display:inline-block}
+.p-hi{background:#d8473f}.p-md{background:#d99a2b}.p-lo{background:#c4cad6}
+.star{cursor:pointer;font-size:1.05rem;line-height:1;color:#d4d8e2;user-select:none}
+.star.on{color:#e8a93b}
+.quiet{font-size:.74rem;font-weight:700;white-space:nowrap}
+.quiet.ok{color:var(--muted)}.quiet.warn{color:var(--orange)}.quiet.bad{color:var(--red)}
+.snoozed{font-size:.74rem;font-weight:700;color:var(--violet);white-space:nowrap}
+
+/* NOW view */
+.nowcap{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:8px}
+.nowcap select{border:1.5px solid var(--line);border-radius:10px;padding:10px 11px;font-size:.86rem;background:#fff;max-width:200px}
+.nowcap input{flex:1;min-width:200px;border:1.5px solid var(--line);border-radius:10px;padding:10px 13px;font-size:.92rem;background:#fff}
+.nowcap input:focus,.nowcap select:focus{outline:none;border-color:var(--accent)}
+.todaycard{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--green);border-radius:13px;padding:14px 16px;margin-bottom:11px;box-shadow:0 1px 3px rgba(20,30,60,.05)}
+.todaycard .nm{font-size:.82rem;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.todaycard .act{font-size:1.12rem;font-weight:700;color:var(--ink);line-height:1.35}
+.todaycard .act .lab{color:var(--accent);font-weight:800;margin-right:7px}
+.todaycard .row2{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.attncard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 15px;margin-bottom:9px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.attncard.bad{border-left:4px solid var(--red)}.attncard.warn{border-left:4px solid var(--orange)}
+.attncard .gap{flex:1;min-width:200px}
+.attncard .nm{font-weight:700;color:var(--ink)}
+.attncard .wl{font-size:.84rem;color:var(--soft);margin-top:2px}
+.attncard .acts{display:flex;gap:6px;flex-wrap:wrap}
+.bigempty{text-align:center;color:var(--muted);padding:30px 16px;font-size:.92rem;background:var(--surface);border:1px dashed var(--line);border-radius:13px}
+.eod{margin-top:26px;text-align:center}
+
+/* project list (merged surface) */
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.bar input[type=text]{flex:1;min-width:180px;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-size:.9rem;background:#fff}
+.bar input:focus{outline:none;border-color:var(--accent)}
+.bar select{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-size:.84rem;background:#fff}
+.bar label{font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:5px}
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;box-shadow:0 1px 3px rgba(20,30,60,.05);overflow:hidden}
+.pcard.dorm{border-left:3px solid var(--orange)}
+.prow{display:flex;align-items:center;gap:11px;padding:13px 15px;cursor:pointer;flex-wrap:wrap}
+.prow:hover{background:#fafbfd}
+.prow .nm{font-weight:700;color:var(--ink);font-size:1rem}
+.prow .nx{flex:1;min-width:160px;font-size:.88rem;color:var(--soft)}
+.prow .nx .lab{color:var(--accent);font-weight:800;font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;margin-right:5px}
+.prow .meta{display:flex;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap}
+.pdetail{display:none;padding:0 15px 15px;border-top:1px solid var(--line2)}
+.pdetail.on{display:block}
+.mfield{margin-top:11px}
+.mfield .lab{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:3px}
+.mfield .val{font-size:.9rem;color:#36405a;min-height:1.15em}
+.mfield .val.big{font-size:.95rem}
+.notelog{margin-top:4px}
+.notelog .nrow{display:flex;gap:9px;font-size:.84rem;padding:5px 0;border-top:1px dashed var(--line2);color:#36405a}
+.notelog .nrow:first-child{border-top:0}
+.notelog .nd{flex:none;color:var(--muted);font-variant-numeric:tabular-nums;font-size:.78rem;width:50px}
+.notelog .ndone{color:#aab0be}
+.mquick{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}
+.addbtn{border:1.5px dashed var(--line);background:none;color:var(--muted);border-radius:9px;padding:9px 14px;font-size:.85rem;font-weight:700;width:100%;margin-top:4px}
+.addbtn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* inbox */
+.bd-capture{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px 16px;box-shadow:0 1px 3px rgba(20,30,60,.05);margin-bottom:14px}
+.bd-capture .row{display:flex;gap:10px}
+.bd-capture input{flex:1;border:1.5px solid var(--line);border-radius:10px;padding:11px 14px;font-size:1rem;background:#fff}
+.bd-capture input:focus{outline:none;border-color:var(--accent)}
+.bd-capture .hint{font-size:.76rem;color:var(--muted);margin-top:8px}
+.bd-grid{column-count:3;column-gap:13px}
+@media(max-width:780px){.bd-grid{column-count:2}}
+@media(max-width:520px){.bd-grid{column-count:1}}
+.note{break-inside:avoid;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--grey);border-radius:11px;padding:12px 13px;margin-bottom:13px;box-shadow:0 1px 3px rgba(20,30,60,.05)}
+.note .tx{font-size:.92rem;color:var(--ink);line-height:1.45;min-height:1.1em}
+.note .meta{display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:9px;border-top:1px solid var(--line2);flex-wrap:wrap}
+.note .dots{display:flex;gap:5px}
+.note .cd{width:13px;height:13px;border-radius:50%;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.note .nact{margin-left:auto;display:flex;gap:3px}
+.note .nact button{border:0;background:none;font-size:.82rem;color:var(--muted);padding:2px 6px;border-radius:6px}
+.note .nact button:hover{background:var(--accentsoft);color:var(--accent)}
+.bd-empty{text-align:center;color:var(--muted);padding:40px 0;font-size:.92rem}
+.chip{border:1.5px solid var(--line);background:var(--surface);color:var(--soft);border-radius:999px;padding:5px 12px;font-size:.8rem;font-weight:600}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* data tab */
+.prose{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 26px;box-shadow:0 1px 3px rgba(20,30,60,.05);max-width:760px}
+.prose h3{font-size:1rem;color:var(--ink);margin:18px 0 7px}.prose h3:first-child{margin-top:0}
+.prose p,.prose li{font-size:.9rem;color:var(--soft)}.prose ul{margin:6px 0 6px 18px}.prose li{margin-bottom:5px}
+.spbox{border:1.5px solid var(--line);border-radius:12px;padding:15px 16px;margin:14px 0;background:#fbfcfe}
+.sphead{display:flex;align-items:center;gap:10px}
+.spbadge{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:2px 9px;border-radius:999px;background:var(--greybg);color:var(--grey)}
+.spbadge.on{background:var(--greenbg);color:var(--green)}
+.spstatus{font-size:.84rem;color:var(--soft)}.spstatus.ok{color:var(--green);font-weight:600}.spstatus.bad{color:var(--red);font-weight:600}
+.cfgform{display:grid;gap:9px}
+.cfgform label{display:flex;flex-direction:column;gap:3px;font-size:.74rem;font-weight:700;color:var(--soft)}
+.cfgform input{border:1.5px solid var(--line);border-radius:8px;padding:8px 11px;font-size:.88rem;font-weight:400;background:#fff;font-family:inherit}
+.cfgform input:focus{outline:none;border-color:var(--accent)}
+.opt{display:flex;gap:13px;align-items:flex-start;border:1px solid var(--line);border-radius:11px;padding:13px 15px;margin-bottom:10px}
+.opt .ic{flex:none;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem}
+.opt.now2 .ic{background:var(--greenbg)} .opt.m365 .ic{background:var(--bluebg)}
+.opt .ti{font-weight:700;color:var(--ink);font-size:.92rem}
+.opt .ds{font-size:.84rem;color:var(--soft);margin-top:2px}
+code{background:#eef1f6;border-radius:5px;padding:1px 6px;font-size:.84em}
+
+/* capture FAB + overlay */
+.fab{position:fixed;right:22px;bottom:22px;z-index:40;background:var(--accent);color:#fff;border:0;border-radius:999px;padding:13px 20px;font-size:.92rem;font-weight:800;box-shadow:0 8px 22px rgba(67,56,202,.4)}
+.fab:hover{background:#3730a3}
+.capov{position:fixed;inset:0;background:rgba(20,25,40,.45);display:none;align-items:flex-start;justify-content:center;z-index:70;padding:14vh 16px}
+.capov.on{display:flex}
+.capbox{background:var(--surface);border-radius:14px;max-width:560px;width:100%;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.capbox h3{font-size:1.05rem;color:var(--ink);margin-bottom:3px}
+.capbox .sub{font-size:.8rem;color:var(--muted);margin-bottom:11px}
+.capbox textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;font-size:1rem;min-height:70px;resize:vertical;font-family:inherit}
+.capbox textarea:focus{outline:none;border-color:var(--accent)}
+.capbox .cr{display:flex;gap:9px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.capbox select{border:1.5px solid var(--line);border-radius:9px;padding:9px 11px;font-size:.86rem;background:#fff;flex:1;min-width:160px}
+
+/* modals */
+.gmodal{position:fixed;inset:0;background:rgba(20,25,40,.5);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:30px 16px;overflow-y:auto}
+.gmodal.on{display:flex}
+.gbox{background:var(--surface);border-radius:14px;max-width:680px;width:100%;padding:26px 30px;box-shadow:0 20px 60px rgba(0,0,0,.25);position:relative}
+.gclose{position:absolute;top:14px;right:16px;border:0;background:none;font-size:1.5rem;color:var(--muted);line-height:1}
+.gbox h2{font-size:1.25rem;color:var(--ink);margin-bottom:4px;padding-right:20px}
+.gbox .gintro{font-size:.86rem;color:var(--soft);margin-bottom:8px}
+.gbox h3{font-size:1rem;color:var(--ink);margin:18px 0 7px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.gbox .gn{flex:none;width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;font-weight:800;font-size:.82rem;display:inline-flex;align-items:center;justify-content:center}
+.gbox .gt{font-size:.72rem;font-weight:600;color:var(--muted)}
+.gbox p{font-size:.88rem;color:var(--soft);margin:5px 0}
+.gbox ul{margin:5px 0 5px 20px}.gbox li{font-size:.88rem;color:var(--soft);margin-bottom:4px}
+.gbox ul ul{margin:4px 0 4px 18px}
+.gbox .gtip{font-size:.82rem;color:var(--muted);background:#f6f7fb;border-radius:8px;padding:8px 11px;margin-top:7px}
+.gbox code{background:#eef1f6;border-radius:5px;padding:1px 6px;font-size:.84em}
+.consta{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;font-size:.82rem;font-family:ui-monospace,Menlo,Consolas,monospace;background:#fbfcfe;min-height:110px;resize:vertical;margin-bottom:9px}
+.consta:focus{outline:none;border-color:var(--accent)}
+.eodrow{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line2)}
+.eodrow:first-of-type{border-top:0}
+.eodrow .en{font-weight:700;color:var(--ink);font-size:.9rem;flex:none;width:34%}
+.eodrow .ei{flex:1;border:1.5px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.86rem;font-family:inherit}
+.eodrow .ei:focus{outline:none;border-color:var(--accent)}
+
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:.86rem;font-weight:600;opacity:0;pointer-events:none;transition:.22s;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.foot{margin-top:18px;font-size:.78rem;color:var(--muted)}
+@media(max-width:620px){.wrap{padding:24px 14px 90px}.head h1{font-size:1.5rem}}
+</style></head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div><h1>My Projects<span class="dot">.</span></h1>
+      <div class="sub" id="hsub">What I'm working on, what's next — and nothing forgotten.</div></div>
+    <div class="today" id="todayDate"></div>
+  </div>
+
+  <div id="reconnectBar" style="display:none;background:#fff7e0;border:1px solid #ecd9a3;border-radius:10px;padding:10px 14px;margin:14px 0 0;font-size:.88rem;color:#7a5a08">
+    🔁 Your sync file needs a quick OK to load the latest from OneDrive.
+    <button class="btn sm" style="margin-left:8px" onclick="reconnectSyncFile()">Reconnect &amp; load</button>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-t="now" onclick="setTab('now',this)">🎯 Now</button>
+    <button class="tab" data-t="projects" onclick="setTab('projects',this)">📋 Projects<span class="pip" id="projcount"></span></button>
+    <button class="tab" data-t="inbox" onclick="setTab('inbox',this)">🧠 Inbox<span class="pip" id="dumpcount"></span></button>
+    <button class="tab" data-t="data" onclick="setTab('data',this)">⚙️ Data</button>
+  </div>
+
+  <!-- NOW -->
+  <div id="tab-now">
+    <div class="nowcap">
+      <select id="nowProj"></select>
+      <input id="nowText" placeholder="Quick note… (Enter saves to the picked project, or to Inbox)" autocomplete="off" onkeydown="if(event.key==='Enter')quickAdd()">
+      <button class="btn solid" onclick="quickAdd()">Add</button>
+    </div>
+    <div id="nowBody"></div>
+    <div class="eod"><button class="btn" onclick="openShutdown()">🌙 End the day — set tomorrow's first step</button></div>
+  </div>
+
+  <!-- PROJECTS (merged surface) -->
+  <div id="tab-projects" style="display:none">
+    <div class="bar">
+      <input type="text" id="q" placeholder="Search projects…" oninput="renderProjects()">
+      <select id="fStatus" onchange="renderProjects()">
+        <option value="">All statuses</option><option>Active</option><option>Next up</option><option>On hold</option><option>Idea</option><option>Done</option>
+      </select>
+      <label><input type="checkbox" id="showArchived" onchange="renderProjects()"> show Done</label>
+      <button class="btn sm" style="margin-left:auto" onclick="openConsolidate(null)">✨ Catch up with Claude</button>
+    </div>
+    <div id="projList"></div>
+    <button class="addbtn" onclick="addProject()">＋ Add a project</button>
+  </div>
+
+  <!-- INBOX (brain dump) -->
+  <div id="tab-inbox" style="display:none">
+    <div class="bd-capture">
+      <div class="row">
+        <input id="bdinput" placeholder="What's on your mind? Type it, press Enter — get it out of your head." autocomplete="off" onkeydown="if(event.key==='Enter')addDump()">
+        <button class="btn solid" onclick="addDump()">Add</button>
+      </div>
+      <div class="hint">No categories to pick — just dump it. Color or send it to a project later.</div>
+    </div>
+    <div class="bar" id="catchips"></div>
+    <div class="bd-grid" id="dumpgrid"></div>
+    <div class="bd-empty" id="dumpempty" style="display:none">Nothing here. Dump a thought above; triage it into a project whenever.</div>
+  </div>
+
+  <!-- DATA -->
+  <div id="tab-data" style="display:none">
+    <div class="prose">
+      <h3>Where your data lives</h3>
+      <p>By default everything saves in <b>this browser</b> (one device). To use it across your computers, connect a <b>sync file</b> below — the simplest option for one person.</p>
+
+      <div class="spbox" style="border-color:#bfe0cb;background:#f3fbf6">
+        <div class="sphead"><b>🔁 Sync across your computers (OneDrive file)</b><span class="spbadge" id="filebadge">Not connected</span></div>
+        <p style="margin:6px 0 10px">Keep your data in <b>one file inside your OneDrive folder</b>. OneDrive syncs that file to all your computers; this app reads &amp; writes it. <b>No app setup, no admin.</b> (Edge or Chrome.)</p>
+        <ol style="margin:0 0 11px 18px;font-size:.86rem;color:var(--soft)">
+          <li>First computer: click <b>Connect a sync file</b> → save <code>my-projects.json</code> <b>inside your OneDrive folder</b>.</li>
+          <li>Other computers: open this page → <b>Connect a sync file</b> → pick that <b>same</b> file from OneDrive.</li>
+          <li>That's it — it stays in sync. (Edit one computer at a time; give OneDrive a minute to sync.)</li>
+        </ol>
+        <div style="display:flex;gap:9px;flex-wrap:wrap">
+          <button class="btn solid" onclick="connectSyncFile()">🔗 Connect a sync file</button>
+          <button class="btn" onclick="disconnectFile()" style="margin-left:auto">Stop syncing</button>
+        </div>
+        <div class="spstatus" id="filestatus" style="margin-top:10px"></div>
+      </div>
+
+      <details style="margin:14px 0"><summary style="cursor:pointer;font-weight:700;color:var(--soft);font-size:.9rem">Or: full SharePoint list sync (more setup — for phone access / a future team)</summary>
+      <div class="spbox" style="margin-top:10px">
+        <div class="sphead"><b>Connect to SharePoint</b><span class="spbadge" id="spbadge">Local mode</span></div>
+        <p style="margin:6px 0 12px">Paste your two codes (App ID + Directory ID) and your site link, then Connect. No file editing. New here? Open the setup guide for how to get the codes.</p>
+        <div class="cfgform">
+          <label>App ID (Client ID) <input id="cfgClient" placeholder="e.g. 1a2b3c4d-…" autocomplete="off"></label>
+          <label>Directory (Tenant ID) <input id="cfgTenant" placeholder="e.g. 9f8e7d6c-…" autocomplete="off"></label>
+          <label>Your SharePoint site link <input id="cfgSite" placeholder="https://yourcompany.sharepoint.com/sites/YourSite" autocomplete="off"></label>
+        </div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:11px">
+          <button class="btn solid" onclick="saveAndConnect()">🔗 Save &amp; Connect</button>
+          <button class="btn" onclick="openGuide()">📖 Open the setup guide</button>
+          <button class="btn" onclick="disconnectSP()" style="margin-left:auto">Disconnect</button>
+        </div>
+        <div class="spstatus" id="spstatus" style="margin-top:11px"></div>
+      </div>
+      </details>
+      <div style="display:flex;gap:9px;margin:14px 0;flex-wrap:wrap">
+        <button class="btn solid" onclick="exportData()">⬇ Export backup (JSON)</button>
+        <button class="btn" onclick="document.getElementById('importfile').click()">⬆ Import / restore</button>
+        <input type="file" id="importfile" accept="application/json" style="display:none" onchange="importData(event)">
+        <button class="btn" onclick="resetData()" style="margin-left:auto">↺ Reset to sample</button>
+      </div>
+      <div class="opt now2"><div class="ic">💾</div><div><div class="ti">Right now — no setup</div><div class="ds">Saved in this browser. Great for one device. Export keeps a copy safe.</div></div></div>
+      <div class="opt m365"><div class="ic">📊</div><div><div class="ti">After you connect SharePoint</div><div class="ds">Your projects, notes, and “where I left off” live in a SharePoint list — backed up by Microsoft, on any device. You sign in with your normal work account; no passwords saved here.</div></div></div>
+      <p style="font-size:.84rem;color:var(--muted)">Note: a live connection only works once this page is hosted on a real web address (the guide covers free hosting). It won't connect inside a preview window — your data stays safe in the browser until then.</p>
+    </div>
+  </div>
+
+  <div class="foot">Your edits save automatically. Press <b>n</b> anywhere for a quick note. Export from Data to back up.</div>
+</div>
+
+<button class="fab" onclick="openCapture()">＋ Capture</button>
+
+<!-- capture overlay -->
+<div class="capov" id="capov" onclick="if(event.target.id==='capov')closeCapture()">
+  <div class="capbox">
+    <h3>Quick capture</h3>
+    <div class="sub">Get it down now, sort it later. (Esc to cancel)</div>
+    <textarea id="capText" placeholder="What just came up?"></textarea>
+    <div class="cr">
+      <select id="capProj"></select>
+      <button class="btn solid" onclick="saveCapture()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- consolidation modal -->
+<div class="gmodal" id="consmodal" onclick="if(event.target.id==='consmodal')closeConsolidate()">
+  <div class="gbox">
+    <button class="gclose" onclick="closeConsolidate()">×</button>
+    <h2 id="constitle">Catch up with Claude</h2>
+    <p class="gintro">Distill your latest notes into a tight “where I left off” — optional, do it when you like. Your raw notes are always kept.</p>
+    <p id="consnone" style="display:none;color:var(--muted);font-size:.86rem">No new notes to distill right now. Jot some notes first.</p>
+    <div id="consbody">
+      <h3><span class="gn">1</span> Send to Claude <span class="gt">opens Claude with this ready, or copy it</span></h3>
+      <textarea id="consprompt" class="consta" readonly></textarea>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="btn solid" onclick="openInClaude()">↗ Open in Claude</button>
+        <button class="btn" onclick="copyConsPrompt(this)">📋 Copy</button>
+      </div>
+      <h3><span class="gn">2</span> Paste Claude's reply here</h3>
+      <textarea id="consreply" class="consta" placeholder="Paste Claude's full reply (the JSON it returns) here…"></textarea>
+      <button class="btn solid" onclick="applyConsReply()">✓ Apply update</button>
+      <div class="spstatus" id="consstatus" style="margin-top:9px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- shutdown modal -->
+<div class="gmodal" id="eodmodal" onclick="if(event.target.id==='eodmodal')closeShutdown()">
+  <div class="gbox">
+    <button class="gclose" onclick="closeShutdown()">×</button>
+    <h2>End-of-day wrap</h2>
+    <p class="gintro">For each project you touched today, write the <b>very first thing to do when you come back</b>. Tomorrow-you will thank you — this is the single best trick for picking up fast.</p>
+    <div id="eodbody"></div>
+    <button class="btn solid" style="margin-top:14px" onclick="saveShutdown()">Save &amp; wrap up</button>
+  </div>
+</div>
+
+<!-- setup guide modal -->
+<div class="gmodal" id="guidemodal" onclick="if(event.target.id==='guidemodal')closeGuide()">
+  <div class="gbox">
+    <button class="gclose" onclick="closeGuide()">×</button>
+    <h2>Connect to SharePoint — do it yourself (~20 min)</h2>
+    <p class="gintro">Sign in with your work Microsoft account. Part C needs admin rights — as the company owner you almost certainly have them.</p>
+    <h3><span class="gn">A</span> Make the list <span class="gt">~5 min, in SharePoint</span></h3>
+    <p>Open your site → <b>New → List → Blank list</b>, name it exactly <code>Projects</code>, and add these columns:</p>
+    <ul>
+      <li><code>Area</code> — Single line of text</li>
+      <li><code>Status</code> — Choice (Active, Next up, On hold, Idea, Done)</li>
+      <li><code>NextStep</code> — Single line of text</li>
+      <li><code>Target</code> — Date · <code>Priority</code> — Choice (hi, md, lo) · <code>Focus</code> — Yes/No · <code>UpdatedOn</code> — Date</li>
+      <li><code>Memory</code> — <b>Multiple lines of text</b> (holds your “where I left off”, notes, decisions — keep it)</li>
+    </ul>
+    <p>Make a second list named <code>BrainDump</code> with one column: <code>Category</code> — Choice (note, idea, task, follow, ques, urgent). The built-in “Title” holds the project name / note text.</p>
+    <h3><span class="gn">B</span> Put the page online <span class="gt">~5 min, free</span></h3>
+    <ul>
+      <li>Free account at <b>github.com</b>; rename the file to <code>index.html</code>.</li>
+      <li><b>+ → New repository</b> → name <code>tracker</code> → Public → Create.</li>
+      <li><b>Add file → Upload files</b> → drop in <code>index.html</code> → Commit.</li>
+      <li><b>Settings → Pages</b> → Deploy from a branch, <code>main</code>/<code>(root)</code> → Save. Copy your address, e.g. <code>https://YOURNAME.github.io/tracker/</code>.</li>
+    </ul>
+    <h3><span class="gn">C</span> Register the app &amp; copy two IDs <span class="gt">~7 min</span></h3>
+    <ul>
+      <li><b>entra.microsoft.com</b> → search <b>App registrations</b> → <b>+ New registration</b>.</li>
+      <li>Name it; Redirect URI → <b>Single-page application (SPA)</b> → paste your address from B.</li>
+      <li>Click <b>Register</b>. The Overview page shows <b>Application (client) ID</b> = App ID and <b>Directory (tenant) ID</b> = Directory ID. Copy both.</li>
+      <li><b>API permissions → Microsoft Graph → Delegated</b> → add <code>Sites.ReadWrite.All</code> + <code>User.Read</code> → <b>Grant admin consent</b>.</li>
+    </ul>
+    <h3><span class="gn">D</span> Connect</h3>
+    <p>Open your live page → <b>Data</b> → paste App ID, Directory ID, and your site link → <b>Save &amp; Connect</b>. 🎉</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== CONFIG (set via the Data tab form) ===================== */
+const CFGKEY='mpt_cfg';
+function loadCfg(){ try{ return JSON.parse(localStorage.getItem(CFGKEY))||{}; }catch(e){ return {}; } }
+function saveCfg(c){ try{ localStorage.setItem(CFGKEY, JSON.stringify(c)); }catch(e){} }
+let CONFIG=Object.assign({clientId:"",tenantId:"",siteHost:"",sitePath:"",projectsList:"Projects",dumpList:"BrainDump"}, loadCfg());
+let SP_ON=!!CONFIG.clientId, SP_READY=false;
+
+/* ===================== local store ===================== */
+const KEY='mpt_v3';
+let MEM=null;
+const Store={
+  load(){ try{ const r=localStorage.getItem(KEY); return r?JSON.parse(r):null; }catch(e){ return MEM; } },
+  save(s){ MEM=s; try{ localStorage.setItem(KEY, JSON.stringify(s)); }catch(e){ if(e&&/quota/i.test(e.name||e.message||'')) toast('⚠ Storage full — export a backup; new edits may not be saved.'); } }
+};
+
+/* ===================== SharePoint adapter (memory-safe) ===================== */
+const FMAP={ projects:{Title:'name',Area:'area',Status:'status',NextStep:'next',Target:'target',Priority:'prio',Focus:'focus',UpdatedOn:'updated'}, dump:{Title:'text',Category:'cat'} };
+const MEMKEYS=['summary','openq','decisions','why','snoozeUntil'];
+let _msal=null,_siteId=null,_listId={};
+function loadScript(src){return new Promise((ok,err)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>err(new Error('blocked: '+src));document.head.appendChild(s);});}
+async function spConnect(){
+  if(typeof msal==='undefined') await loadScript('https://cdn.jsdelivr.net/npm/@azure/msal-browser@3/lib/msal-browser.min.js');
+  if(!_msal){ _msal=new msal.PublicClientApplication({auth:{clientId:CONFIG.clientId,authority:`https://login.microsoftonline.com/${CONFIG.tenantId}`,redirectUri:location.origin+location.pathname}}); await _msal.initialize(); }
+  await _msal.handleRedirectPromise();
+}
+async function spToken(){ const scopes=['Sites.ReadWrite.All','User.Read']; let a=_msal.getAllAccounts()[0]; if(!a){a=(await _msal.loginPopup({scopes})).account;} try{return (await _msal.acquireTokenSilent({scopes,account:a})).accessToken;}catch(e){return (await _msal.acquireTokenPopup({scopes})).accessToken;} }
+async function gfetch(path,opts={}){ const t=await spToken(); const r=await fetch('https://graph.microsoft.com/v1.0'+path,{...opts,headers:{Authorization:'Bearer '+t,'Content-Type':'application/json',...(opts.headers||{})}}); if(!r.ok) throw new Error('Graph '+r.status+' '+(await r.text()).slice(0,160)); return r.status===204?null:r.json(); }
+async function spResolve(){ if(_siteId)return; const site=await gfetch(`/sites/${CONFIG.siteHost}:${CONFIG.sitePath}`); _siteId=site.id; const lists=await gfetch(`/sites/${_siteId}/lists?$select=id,displayName`); for(const l of lists.value){ if(l.displayName===CONFIG.projectsList)_listId.projects=l.id; if(l.displayName===CONFIG.dumpList)_listId.dump=l.id; } if(!_listId.projects) throw new Error("List 'Projects' not found — check the name."); }
+function fieldsToItem(type,it){ const m=FMAP[type],f=it.fields||{},o={id:'sp'+it.id,spId:it.id}; for(const c in m){ let v=f[c]; if(c==='Target'||c==='UpdatedOn')v=v?String(v).slice(0,10):''; if(c==='Focus')v=!!v; o[m[c]]=v==null?(c==='Focus'?false:''):v; } if(type==='projects'){ o.notes=[]; o.summary=o.openq=o.decisions=o.why=o.snoozeUntil=''; if(f.Memory){ try{ const mm=JSON.parse(f.Memory); MEMKEYS.forEach(k=>{if(mm[k]!=null)o[k]=mm[k];}); if(Array.isArray(mm.notes))o.notes=mm.notes; }catch(e){} } } return o; }
+function itemToFields(type,o){ const m=FMAP[type],f={}; for(const c in m){ let v=o[m[c]]; if((c==='Target'||c==='UpdatedOn')&&!v)v=null; f[c]=v; } if(type==='projects'){ const mm={notes:o.notes||[]}; MEMKEYS.forEach(k=>mm[k]=o[k]||''); f.Memory=JSON.stringify(mm); } return f; }
+const SP={
+  async loadAll(){ await spResolve();
+    const pj=await gfetch(`/sites/${_siteId}/lists/${_listId.projects}/items?$expand=fields&$top=500`);
+    let dump=[]; if(_listId.dump){ const d=await gfetch(`/sites/${_siteId}/lists/${_listId.dump}/items?$expand=fields&$top=500`); dump=d.value.map(i=>fieldsToItem('dump',i)); }
+    SP_READY=true; return { projects: pj.value.map(i=>fieldsToItem('projects',i)), dump }; },
+  async upsert(type,o){ await spResolve(); const lid=_listId[type]; if(!lid)return; const body=JSON.stringify({fields:itemToFields(type,o)});
+    if(o.spId) await gfetch(`/sites/${_siteId}/lists/${lid}/items/${o.spId}/fields`,{method:'PATCH',body:JSON.stringify(itemToFields(type,o))});
+    else { const r=await gfetch(`/sites/${_siteId}/lists/${lid}/items`,{method:'POST',body}); o.spId=r.id; } },
+  async remove(type,o){ if(o&&o.spId){ await spResolve(); const lid=_listId[type]; if(lid) await gfetch(`/sites/${_siteId}/lists/${lid}/items/${o.spId}`,{method:'DELETE'}); } }
+};
+function sync(type,item){ if(SP_ON&&SP_READY&&item){ SP.upsert(type,item).catch(()=>toast('SharePoint save failed — kept locally')); } }
+function syncDel(type,item){ if(SP_ON&&SP_READY&&item){ SP.remove(type,item).catch(()=>{}); } }
+
+/* ===================== dates (UTC-safe; app pinned to a demo "today") ===================== */
+const todayISO="2026-06-28";
+function dAgo(d){ if(!d)return null; const a=Date.parse(d.slice(0,10)+'T00:00:00Z'), t=Date.parse(todayISO+'T00:00:00Z'); if(isNaN(a))return null; return Math.round((t-a)/86400000); }
+function fmt(d){ if(!d)return''; const p=d.slice(0,10).split('-'); if(p.length<3)return d; return new Date(Date.UTC(+p[0],+p[1]-1,+p[2])).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'}); }
+function addDaysISO(n){ const t=Date.parse(todayISO+'T00:00:00Z')+n*86400000; return new Date(t).toISOString().slice(0,10); }
+function relTxt(d){ const n=dAgo(d); if(n===null)return'—'; if(n<=0)return'today'; if(n===1)return'1 day'; if(n<14)return n+' days'; if(n<60)return Math.floor(n/7)+' wks'; return Math.floor(n/30)+' mo'; }
+
+/* ===================== model ===================== */
+const STATUSES=["Active","Next up","On hold","Idea","Done"];
+const SCLASS={"Active":"st-active","Next up":"st-next","On hold":"st-hold","Idea":"st-idea","Done":"st-done"};
+const PRIOS=["hi","md","lo"];
+const CATS=[{k:"note",label:"Note",bg:"#eef0f4",color:"#5b6478",dot:"#9aa3b5"},{k:"idea",label:"Idea",bg:"#fbf1dd",color:"#9a6b15",dot:"#e0a429"},{k:"task",label:"To-do",bg:"#e8f0fb",color:"#2f6fd0",dot:"#3b82d6"},{k:"follow",label:"Follow-up",bg:"#e7f5ee",color:"#1f8a55",dot:"#2ba36a"},{k:"ques",label:"Question",bg:"#f1ecfb",color:"#7c4dd6",dot:"#9268db"},{k:"urgent",label:"Urgent",bg:"#fdeceb",color:"#c0392b",dot:"#d8473f"}];
+const CAT=k=>CATS.find(c=>c.k===k)||CATS[0];
+const QUIET_WARN=7, QUIET_BAD=14;
+let _seq=0; function pid(){ return 'id'+Date.now().toString(36)+(_seq++); }
+
+const SAMPLE={ projects:[
+  {id:pid(),focus:true, name:"SRCT Process Hub",area:"Work · platform",status:"Active",prio:"hi",next:"Email the team to kick off the pilot Monday",target:"2026-07-10",updated:"2026-06-27",
+    summary:"Delegation tracker built & demoed end-to-end. Piloting manually first before automating.",decisions:"Manual-first — automating a broken process just breaks it faster.",openq:"Auto-reassign of stalled work: automatic, or one-click?",why:"The platform everything else hangs off.",snoozeUntil:"",
+    notes:[{d:"2026-06-22",t:"Team liked the scoreboard view.",c:true},{d:"2026-06-26",t:"Decided to pilot manually first.",c:true}]},
+  {id:pid(),focus:true, name:"Personal website",area:"Personal · build",status:"Active",prio:"md",next:"Wire up the projects landing page",target:"2026-07-15",updated:"2026-06-26",summary:"",decisions:"",openq:"",why:"",snoozeUntil:"",notes:[]},
+  {id:pid(),focus:false,name:"OM automation pipeline",area:"Work · product",status:"Next up",prio:"hi",next:"Spec the intake form",target:"2026-08-01",updated:"2026-06-20",summary:"",decisions:"",openq:"",why:"",snoozeUntil:"",notes:[]},
+  {id:pid(),focus:false,name:"Q3 hiring — analyst",area:"Work · team",status:"Next up",prio:"md",next:"Draft the job description",target:"2026-07-20",updated:"2026-06-22",summary:"",decisions:"",openq:"",why:"",snoozeUntil:"",notes:[]},
+  {id:pid(),focus:false,name:"Learn Power Automate",area:"Personal · skill",status:"Active",prio:"lo",next:"Finish module 3 (flows + approvals)",target:"",updated:"2026-06-25",summary:"",decisions:"",openq:"",why:"",snoozeUntil:"",notes:[]},
+  {id:pid(),focus:false,name:"Marathon training",area:"Personal · health",status:"Active",prio:"md",next:"20 km long run Saturday",target:"2026-10-04",updated:"2026-06-28",summary:"",decisions:"",openq:"",why:"",snoozeUntil:"",notes:[]},
+  {id:pid(),focus:false,name:"Home office refresh",area:"Personal",status:"On hold",prio:"lo",next:"Decide on a standing desk",target:"",updated:"2026-06-08",summary:"Comparing standing desks; leaning toward the one I saw at Costco.",decisions:"",openq:"",why:"",snoozeUntil:"",notes:[{d:"2026-06-08",t:"Liked the Costco standing desk — $399, electric.",c:false}]},
+  {id:pid(),focus:false,name:"Client onboarding revamp",area:"Work · ops",status:"On hold",prio:"md",next:"Map the current steps before redesigning",target:"",updated:"2026-06-02",summary:"Started mapping the onboarding flow, then got pulled onto the OM deadline.",decisions:"",openq:"Do we keep the manual welcome call or automate it?",why:"New clients are churning early — this is the suspected cause.",snoozeUntil:"",notes:[{d:"2026-06-02",t:"Sketched the first 4 steps; dropped when the OM deadline hit.",c:false}]},
+  {id:pid(),focus:false,name:"Investor deck refresh",area:"Work",status:"Done",prio:"lo",next:"—",target:"2026-06-20",updated:"2026-06-20",summary:"Delivered the refreshed deck.",decisions:"",openq:"",why:"",snoozeUntil:"",notes:[]},
+], dump:[
+  {id:pid(),text:"Ask Josh for the OM intake examples before Friday",cat:"follow"},
+  {id:pid(),text:"Idea: a one-click weekly recap email from the tracker",cat:"idea"},
+  {id:pid(),text:"Renew the domain for the personal site",cat:"task"},
+] };
+
+let STATE = Store.load() || JSON.parse(JSON.stringify(SAMPLE));
+function normalize(){
+  if(!STATE||!Array.isArray(STATE.projects))STATE={projects:[],dump:[]};
+  if(!Array.isArray(STATE.dump))STATE.dump=[];
+  STATE.projects.forEach(p=>{ ['summary','openq','decisions','why','snoozeUntil','next','area'].forEach(k=>{if(p[k]===undefined)p[k]='';}); if(!Array.isArray(p.notes))p.notes=[]; if(!p.id)p.id=pid(); if(!p.status)p.status='Next up'; if(!p.prio)p.prio='md'; });
+}
+normalize();
+let _fileHandle=null,_fileMode=false,_saveTimer=null,_writing=false;
+function persist(){ Store.save(STATE); if(_fileMode){ clearTimeout(_saveTimer); _saveTimer=setTimeout(fileWrite,500); } }
+
+/* ===================== OneDrive file sync (File System Access API) ===================== */
+function fsSupported(){ return typeof window!=='undefined' && 'showSaveFilePicker' in window; }
+function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open('mpt_fs',1); r.onupgradeneeded=()=>r.result.createObjectStore('h'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function idbSet(k,v){ const db=await idb(); return new Promise((res,rej)=>{ const t=db.transaction('h','readwrite'); t.objectStore('h').put(v,k); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); }
+async function idbGet(k){ const db=await idb(); return new Promise((res,rej)=>{ const t=db.transaction('h','readonly'); const q=t.objectStore('h').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
+async function idbDel(k){ const db=await idb(); return new Promise((res)=>{ const t=db.transaction('h','readwrite'); t.objectStore('h').delete(k); t.oncomplete=()=>res(); }); }
+function fileStatus(m,c){ const e=document.getElementById('filestatus'); if(e){e.textContent=m;e.className='spstatus '+(c||'');} const b=document.getElementById('filebadge'); if(b){ b.textContent=_fileMode?'Syncing':'Not connected'; b.classList.toggle('on',_fileMode); } }
+async function ensurePerm(h,write){ const o={mode:write?'readwrite':'read'}; if(!h.queryPermission)return true; if((await h.queryPermission(o))==='granted')return true; return (await h.requestPermission(o))==='granted'; }
+async function fileWrite(){ if(!_fileHandle||_writing)return; try{ _writing=true; const w=await _fileHandle.createWritable(); await w.write(JSON.stringify(STATE,null,2)); await w.close(); }catch(e){ fileStatus('⚠ Couldn’t save to the file — '+e.message,'bad'); }finally{ _writing=false; } }
+async function fileReadInto(){ const f=await _fileHandle.getFile(); const txt=(await f.text()).trim(); if(txt){ const s=JSON.parse(txt); if(Array.isArray(s.projects)){ STATE=s; normalize(); persist(); return true; } } return false; }
+async function connectSyncFile(){
+  if(!fsSupported()){ fileStatus('This browser can’t do file sync — please use Microsoft Edge or Google Chrome.','bad'); return; }
+  try{
+    _fileHandle=await window.showSaveFilePicker({suggestedName:'my-projects.json',types:[{description:'JSON',accept:{'application/json':['.json']}}]});
+    await idbSet('handle',_fileHandle);
+    const f=await _fileHandle.getFile(); const txt=(await f.text()).trim();
+    if(txt && confirm('That file already has data. Load it into this computer (replaces what’s here now)?')){ await fileReadInto(); }
+    _fileMode=true; await fileWrite();
+    fileStatus('✓ Syncing to your file. Open this page on your other computers and connect the SAME file from OneDrive.','ok'); render();
+  }catch(e){ if(e.name!=='AbortError') fileStatus('✕ '+(e.message||e.name),'bad'); }
+}
+async function reconnectSyncFile(){
+  try{ if(!_fileHandle) _fileHandle=await idbGet('handle'); if(!_fileHandle)return;
+    if(await ensurePerm(_fileHandle,true)){ await fileReadInto(); _fileMode=true; document.getElementById('reconnectBar').style.display='none'; fileStatus('✓ Synced — loaded the latest from your file.','ok'); render(); }
+    else { fileStatus('Permission denied — click Reconnect to allow.','bad'); }
+  }catch(e){ fileStatus('✕ '+(e.message||e.name),'bad'); }
+}
+async function disconnectFile(){ _fileMode=false; _fileHandle=null; await idbDel('handle'); document.getElementById('reconnectBar').style.display='none'; fileStatus('Stopped syncing to the file. Still saved in this browser.',''); }
+async function bootFileSync(){
+  if(!fsSupported())return;
+  let h; try{ h=await idbGet('handle'); }catch(e){ return; }
+  if(!h)return; _fileHandle=h;
+  try{ if(h.queryPermission && (await h.queryPermission({mode:'readwrite'}))==='granted'){ await fileReadInto(); _fileMode=true; render(); fileStatus('✓ Synced from your file.','ok'); }
+    else { document.getElementById('reconnectBar').style.display='block'; } }
+  catch(e){ document.getElementById('reconnectBar').style.display='block'; }
+}
+
+/* ===================== helpers ===================== */
+let TAB="now", PFILTER="", DUMPFILTER="all";
+function P(id){return STATE.projects.find(x=>x.id===id);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function clean(s){return String(s==null?'':s).replace(/\s+/g,' ').trim();}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._k);t._k=setTimeout(()=>t.classList.remove('on'),2200);}
+function latestNote(p){ const a=(p.notes||[]).slice().sort((x,y)=>x.d<y.d?1:-1); return a[0]; }
+function touchedISO(p){ let d=p.updated||''; (p.notes||[]).forEach(n=>{if(n.d>d)d=n.d;}); return d; }
+function daysQuiet(p){ return dAgo(touchedISO(p)); }
+function isSnoozed(p){ return p.snoozeUntil && dAgo(p.snoozeUntil)<0; }
+function isActive(p){ return p.status!=='Done'; }
+function needsAttention(p){ return isActive(p)&&!p.focus&&!isSnoozed(p) && (daysQuiet(p)>=QUIET_WARN); }
+function whereLeftOff(p){ if(p.summary)return {t:p.summary,fromNote:false}; const n=latestNote(p); if(n)return {t:n.t,fromNote:true}; return {t:'',fromNote:false}; }
+function newNotes(p){ return (p.notes||[]).filter(n=>!n.c); }
+
+document.getElementById('todayDate').textContent = new Date(Date.UTC(2026,5,28)).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'UTC'});
+
+function setTab(t,el){ TAB=t; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); ['now','projects','inbox','data'].forEach(x=>document.getElementById('tab-'+x).style.display=x===t?'':'none'); if(el)el.classList.add('on'); render(); }
+
+/* ===================== capture (global + Now) ===================== */
+function projOptions(sel,firstLabel){ const cur=sel.value; sel.innerHTML=`<option value="">${firstLabel}</option>`+STATE.projects.filter(isActive).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join(''); if(cur)sel.value=cur; }
+function openCapture(){ projOptions(document.getElementById('capProj'),'— to Inbox (no project) —'); document.getElementById('capText').value=''; document.getElementById('capov').classList.add('on'); setTimeout(()=>document.getElementById('capText').focus(),30); }
+function closeCapture(){ document.getElementById('capov').classList.remove('on'); }
+function saveCapture(){ const t=clean(document.getElementById('capText').value); if(!t){closeCapture();return;} const id=document.getElementById('capProj').value; if(id){ const p=P(id); if(p){p.notes.push({d:todayISO,t,c:false});p.updated=todayISO;sync('projects',p);toast('Note added to '+p.name);} } else { STATE.dump.unshift({id:pid(),text:t,cat:'note'}); sync('dump',STATE.dump[0]); toast('Saved to Inbox'); } persist(); closeCapture(); render(); }
+function quickAdd(){ const sel=document.getElementById('nowProj'), inp=document.getElementById('nowText'); const t=clean(inp.value); if(!t)return; const id=sel.value; if(id){const p=P(id);p.notes.push({d:todayISO,t,c:false});p.updated=todayISO;sync('projects',p);toast('Note added to '+p.name);} else {STATE.dump.unshift({id:pid(),text:t,cat:'note'});sync('dump',STATE.dump[0]);toast('Saved to Inbox');} inp.value=''; persist(); render(); }
+
+/* ===================== NOW ===================== */
+function renderNow(){
+  const sel=document.getElementById('nowProj'); projOptions(sel,'— to Inbox (no project) —');
+  const today=STATE.projects.filter(p=>p.focus&&isActive(p));
+  const attn=STATE.projects.filter(needsAttention).sort((a,b)=>daysQuiet(b)-daysQuiet(a));
+  let h='';
+  h+=`<div class="sech"><h2>⭐ Today</h2><span class="ct">${today.length?today.length+' picked':'pick what you’ll move today'}</span><span class="ln"></span></div>`;
+  if(today.length){ h+=today.map(p=>{ const w=whereLeftOff(p);
+    return `<div class="todaycard">
+      <div class="nm"><span class="star on" onclick="toggleFocus('${p.id}')" title="Remove from today">★</span> ${esc(p.name)} <span class="pill ${SCLASS[p.status]}" onclick="cycleStatus('${p.id}')"><span class="d"></span>${p.status}</span></div>
+      <div class="act"><span class="lab">▶ NEXT</span><span contenteditable data-ph="what's the very next step?" onblur="editField('${p.id}','next',this.innerText)">${esc(p.next)}</span></div>
+      <div class="row2"><button class="btn tiny" onclick="openProjectFromNow('${p.id}')">Open</button><button class="btn tiny" onclick="quickNoteTo('${p.id}')">＋ note</button><button class="btn tiny" onclick="toggleFocus('${p.id}')">Done for today</button></div>
+    </div>`; }).join('');
+  } else { h+=`<div class="bigempty">Nothing picked for today.<br><span style="font-size:.84rem">Star 1–3 projects (here or in Projects) and they'll show up as your focus.</span><div style="margin-top:11px">${STATE.projects.filter(isActive).slice(0,4).map(p=>`<button class="btn tiny" style="margin:3px" onclick="toggleFocus('${p.id}')">★ ${esc(p.name)}</button>`).join('')}</div></div>`; }
+  h+=`<div class="sech"><h2>⏳ Gone quiet</h2><span class="ct">${attn.length?attn.length+' need a decision':'all current'}</span><span class="ln"></span></div>`;
+  if(attn.length){ h+=`<p class="lead">Untouched a while — pick it back up, snooze it to a date, or archive it so it stops nagging.</p>`+attn.map(attnCard).join(''); }
+  else { h+=`<div class="bigempty">Nothing's slipping through the cracks. 🎉</div>`; }
+  document.getElementById('nowBody').innerHTML=h;
+}
+function attnCard(p){ const q=daysQuiet(p); const w=whereLeftOff(p); const cls=q>=QUIET_BAD?'bad':'warn';
+  return `<div class="attncard ${cls}">
+    <div class="gap"><div class="nm">${esc(p.name)} <span class="quiet ${cls}">· quiet ${relTxt(touchedISO(p))}</span></div>
+      <div class="wl">${w.t?esc(w.t):'<i>no note yet — open to add where you left off</i>'}</div></div>
+    <div class="acts">
+      <button class="btn tiny" onclick="toggleFocus('${p.id}')">★ Today</button>
+      <button class="btn tiny" onclick="snooze('${p.id}',7)">😴 1wk</button>
+      <button class="btn tiny" onclick="openProjectFromNow('${p.id}')">Open</button>
+      <button class="btn tiny" onclick="setStatus('${p.id}','Done')">✓ Archive</button>
+    </div></div>`;
+}
+function openProjectFromNow(id){ setTab('projects',document.querySelector('.tab[data-t="projects"]')); setTimeout(()=>{ const d=document.getElementById('pd-'+id); if(d){d.classList.add('on'); d.scrollIntoView({behavior:'smooth',block:'center'});} },60); }
+function quickNoteTo(id){ const sel=document.getElementById('capProj'); openCapture(); document.getElementById('capProj').value=id; }
+
+/* ===================== PROJECTS (merged surface) ===================== */
+function renderProjects(){
+  const q=(document.getElementById('q').value||'').toLowerCase();
+  const fs=document.getElementById('fStatus').value;
+  const showDone=document.getElementById('showArchived').checked;
+  let list=STATE.projects.filter(p=>{
+    if(!showDone&&p.status==='Done'&&fs!=='Done')return false;
+    if(fs&&p.status!==fs)return false;
+    if(q&&!(p.name+p.area+p.next+p.summary).toLowerCase().includes(q))return false;
+    return true;
+  });
+  // most-overdue-for-attention first (dormant top), done last
+  list.sort((a,b)=>{ if((a.status==='Done')!==(b.status==='Done'))return a.status==='Done'?1:-1; const ta=touchedISO(a)||'0',tb=touchedISO(b)||'0'; return ta<tb?-1:ta>tb?1:0; });
+  document.getElementById('projList').innerHTML = list.map(projCard).join('') || '<p class="lead">No projects match.</p>';
+  document.getElementById('projcount').textContent=STATE.projects.filter(isActive).length||'';
+}
+function projCard(p){ const q=daysQuiet(p); const dorm=needsAttention(p)||(isActive(p)&&q>=QUIET_BAD); const w=whereLeftOff(p);
+  const quietBadge = p.status==='Done'?'<span class="quiet ok">done</span>' : isSnoozed(p)?`<span class="snoozed">😴 back ${fmt(p.snoozeUntil)}</span>` : `<span class="quiet ${q>=QUIET_BAD?'bad':q>=QUIET_WARN?'warn':'ok'}">${q<=0?'today':'quiet '+relTxt(touchedISO(p))}</span>`;
+  const notes=(p.notes||[]).slice().sort((a,b)=>a.d<b.d?1:-1);
+  return `<div class="pcard ${dorm?'dorm':''}">
+    <div class="prow" onclick="toggleDetail('${p.id}',event)">
+      <span class="star ${p.focus?'on':''}" onclick="event.stopPropagation();toggleFocus('${p.id}')" title="Star = work on it today">${p.focus?'★':'☆'}</span>
+      <span class="pdot p-${p.prio}" onclick="event.stopPropagation();cyclePrio('${p.id}')" title="Priority"></span>
+      <span class="nm">${esc(p.name)}</span>
+      <span class="pill ${SCLASS[p.status]}" onclick="event.stopPropagation();cycleStatus('${p.id}')"><span class="d"></span>${p.status}</span>
+      <span class="nx"><span class="lab">Next</span>${esc(p.next)||'<i style="color:var(--muted)">—</i>'}</span>
+      <span class="meta">${quietBadge}</span>
+    </div>
+    <div class="pdetail" id="pd-${p.id}">
+      <div class="mfield"><span class="lab">Where I left off ${w.fromNote?'<span style="font-weight:600;color:var(--muted)">· from your last note</span>':''}</span>
+        <div class="val big" contenteditable data-ph="1–3 lines on where this stands…" onblur="editField('${p.id}','summary',this.innerText)">${esc(p.summary)}</div></div>
+      <div class="mfield"><span class="lab">▶ Next action</span><div class="val" contenteditable data-ph="the single next step…" onblur="editField('${p.id}','next',this.innerText)">${esc(p.next)}</div></div>
+      <div class="mfield"><span class="lab">Open questions / blockers</span><div class="val" contenteditable data-ph="anything you're waiting on or stuck on…" onblur="editField('${p.id}','openq',this.innerText)">${esc(p.openq)}</div></div>
+      <div class="mfield"><span class="lab">Decisions &amp; why</span><div class="val" contenteditable data-ph="key calls made, so you don't re-litigate…" onblur="editField('${p.id}','decisions',this.innerText)">${esc(p.decisions)}</div></div>
+      <div class="mfield"><span class="lab">Notes log <span style="font-weight:600;color:var(--muted)">· kept forever</span></span>
+        <div class="notelog">${notes.length?notes.map(n=>`<div class="nrow ${n.c?'ndone':''}"><span class="nd">${fmt(n.d)}</span><span>${esc(n.t)}${n.c?' ·✓':''}</span></div>`).join(''):'<div class="nrow"><span style="color:var(--muted)">No notes yet.</span></div>'}</div></div>
+      <div class="mquick">
+        <button class="btn sm" onclick="quickNoteTo('${p.id}')">＋ note</button>
+        ${newNotes(p).length?`<button class="btn sm" onclick="openConsolidate('${p.id}')">✨ Distill ${newNotes(p).length} note${newNotes(p).length>1?'s':''}</button>`:''}
+        ${isSnoozed(p)?`<button class="btn sm" onclick="snooze('${p.id}',0)">Wake now</button>`:`<button class="btn sm" onclick="snooze('${p.id}',7)">😴 Snooze 1wk</button>`}
+        ${p.status==='On hold'?`<button class="btn sm" onclick="setStatus('${p.id}','Active')">▶ Revive</button>`:''}
+        ${p.status!=='Done'?`<button class="btn sm" onclick="setStatus('${p.id}','Done')">✓ Archive</button>`:`<button class="btn sm" onclick="setStatus('${p.id}','Active')">Reopen</button>`}
+        <button class="btn sm" onclick="delProject('${p.id}')" style="margin-left:auto;color:var(--red)">Delete</button>
+      </div>
+    </div></div>`;
+}
+function toggleDetail(id,e){ if(e&&e.target&&e.target.isContentEditable)return; const d=document.getElementById('pd-'+id); if(d)d.classList.toggle('on'); }
+function editField(id,f,v){ const p=P(id); if(!p)return; v=(f==='summary'||f==='openq'||f==='decisions'||f==='why')?clean(v):clean(v); if(p[f]===v)return; p[f]=v; p.updated=todayISO; persist(); sync('projects',p); if(TAB==='now')renderNow(); }
+function cycleStatus(id){ const p=P(id); p.status=STATUSES[(STATUSES.indexOf(p.status)+1)%STATUSES.length]; p.updated=todayISO; persist(); sync('projects',p); render(); }
+function setStatus(id,s){ const p=P(id); p.status=s; if(s==='Done')p.focus=false; p.updated=todayISO; persist(); sync('projects',p); render(); toast(p.name+' → '+s); }
+function cyclePrio(id){ const p=P(id); p.prio=PRIOS[(PRIOS.indexOf(p.prio)+1)%PRIOS.length]; persist(); sync('projects',p); render(); }
+function toggleFocus(id){ const p=P(id); p.focus=!p.focus; if(p.focus){p.updated=todayISO;} persist(); sync('projects',p); render(); }
+function snooze(id,days){ const p=P(id); p.snoozeUntil=days>0?addDaysISO(days):''; persist(); sync('projects',p); render(); toast(days>0?(p.name+' snoozed to '+fmt(p.snoozeUntil)):'Awake'); }
+function delProject(id){ const p=P(id); if(!p)return; if(!confirm('Delete "'+p.name+'"? This removes its notes too.'))return; syncDel('projects',p); STATE.projects=STATE.projects.filter(x=>x.id!==id); persist(); render(); toast('Deleted'); }
+function addProject(){ const np={id:pid(),focus:false,name:"New project",area:"",status:"Next up",prio:"md",next:"",target:"",updated:todayISO,summary:"",openq:"",decisions:"",why:"",snoozeUntil:"",notes:[]}; STATE.projects.unshift(np); persist(); sync('projects',np); renderProjects(); setTimeout(()=>{const d=document.getElementById('pd-'+np.id);if(d)d.classList.add('on');},30); toast('Added — open it to fill in the details'); }
+
+/* ===================== INBOX (brain dump) ===================== */
+function renderInbox(){
+  document.getElementById('dumpcount').textContent=STATE.dump.length||'';
+  document.getElementById('catchips').innerHTML='<button class="chip '+(DUMPFILTER==='all'?'on':'')+'" onclick="setDumpFilter(\'all\',this)">All</button>'+CATS.map(c=>`<button class="chip ${DUMPFILTER===c.k?'on':''}" onclick="setDumpFilter('${c.k}',this)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c.dot};margin-right:5px"></span>${c.label}</button>`).join('');
+  let list=STATE.dump.slice(); if(DUMPFILTER!=='all')list=list.filter(d=>d.cat===DUMPFILTER);
+  document.getElementById('dumpempty').style.display=list.length?'none':'block';
+  const projOpts=STATE.projects.filter(isActive).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  document.getElementById('dumpgrid').innerHTML=list.map(d=>{const c=CAT(d.cat);return `
+    <div class="note" style="background:${c.bg};border-left-color:${c.dot}">
+      <div class="tx" contenteditable data-ph="empty note" onblur="editDump('${d.id}',this.innerText)">${esc(d.text)}</div>
+      <div class="meta">
+        <div class="dots">${CATS.map(x=>`<span class="cd" style="background:${x.dot}${x.k===d.cat?';box-shadow:0 0 0 2px '+x.dot:''}" title="${x.label}" onclick="recolor('${d.id}','${x.k}')"></span>`).join('')}</div>
+        <div class="nact">
+          <select onchange="sendToProject('${d.id}',this.value)" title="Send to a project" style="font-size:.74rem;border:1px solid var(--line);border-radius:6px;padding:1px 3px"><option value="">→ project…</option>${projOpts}</select>
+          <button title="Make it a new project" onclick="promote('${d.id}')">➕</button>
+          <button title="Clear" onclick="clearDump('${d.id}')">✓</button>
+        </div>
+      </div></div>`;}).join('');
+}
+function setDumpFilter(c,el){DUMPFILTER=c;renderInbox();}
+function addDump(){ const inp=document.getElementById('bdinput'); const t=clean(inp.value); if(!t)return; const nd={id:pid(),text:t,cat:'note'}; STATE.dump.unshift(nd); inp.value=''; persist(); sync('dump',nd); renderInbox(); }
+function editDump(id,v){ const d=STATE.dump.find(x=>x.id===id); if(!d)return; v=clean(v); if(!v){clearDump(id);return;} d.text=v; persist(); sync('dump',d); }
+function recolor(id,k){ const d=STATE.dump.find(x=>x.id===id); if(d){d.cat=k;persist();sync('dump',d);renderInbox();} }
+function clearDump(id){ const d=STATE.dump.find(x=>x.id===id); syncDel('dump',d); STATE.dump=STATE.dump.filter(x=>x.id!==id); persist(); renderInbox(); }
+function promote(id){ const d=STATE.dump.find(x=>x.id===id); if(!d)return; const np={id:pid(),focus:false,name:d.text.slice(0,80),area:"From inbox",status:"Next up",prio:"md",next:"",target:"",updated:todayISO,summary:"",openq:"",decisions:"",why:"",snoozeUntil:"",notes:[]}; STATE.projects.unshift(np); syncDel('dump',d); STATE.dump=STATE.dump.filter(x=>x.id!==id); persist(); sync('projects',np); renderInbox(); toast('New project created'); }
+function sendToProject(id,projId){ if(!projId)return; const d=STATE.dump.find(x=>x.id===id); const p=P(projId); if(!d||!p)return; p.notes.push({d:todayISO,t:d.text,c:false}); p.updated=todayISO; syncDel('dump',d); STATE.dump=STATE.dump.filter(x=>x.id!==id); persist(); sync('projects',p); renderInbox(); toast('Sent to '+p.name); }
+
+/* ===================== consolidation (optional; per-project or all) ===================== */
+let _consBatch=[]; // [{p, note}] exactly what we sent — so we only mark THESE distilled
+function buildConsPrompt(scopeId){
+  const projs=(scopeId?[P(scopeId)].filter(Boolean):STATE.projects).filter(p=>newNotes(p).length);
+  if(!projs.length)return null;
+  _consBatch=[];
+  let s=`You are my project-memory keeper. Keep each project's memory concise enough that I can pick it back up in under a minute, and NEVER lose the expensive context.\n\nFold each project's NEW notes into its memory (distill, don't just append).\nRules:\n- "wholeft" = 1–3 plain sentences on the current state.\n- "next" = the single concrete physical next action (e.g. "email Dana the revised quote"), not a vague status.\n- NEVER drop, even if old: key decisions + why, open questions/blockers, why it matters.\n- Cut noise; keep it short. Base everything on the actual notes — don't invent.\n\nReturn ONLY this JSON (no other text):\n[{"id":"ID","wholeft":"...","next":"...","openq":"...","decisions":"...","why":"..."}]\n\n=== PROJECTS ===\n`;
+  projs.forEach(p=>{ s+=`\n## ${p.name}  (id: ${p.id}) — status ${p.status}\nCURRENT MEMORY:\n  Where I left off: ${p.summary||'(none yet)'}\n  Next: ${p.next||'(none)'}\n  Open questions: ${p.openq||'(none)'}\n  Decisions & why: ${p.decisions||'(none)'}\n  Why it matters: ${p.why||'(none)'}\nNEW NOTES:\n`; newNotes(p).forEach(n=>{ s+=`  - [${n.d}] ${n.t}\n`; _consBatch.push({pid:p.id,note:n}); }); });
+  return s;
+}
+function openConsolidate(scopeId){ const prompt=buildConsPrompt(scopeId); document.getElementById('consbody').style.display=prompt?'':'none'; document.getElementById('consnone').style.display=prompt?'none':'block'; document.getElementById('constitle').textContent=scopeId?('Distill: '+(P(scopeId)||{}).name):'Catch up with Claude'; document.getElementById('consprompt').value=prompt||''; document.getElementById('consreply').value=''; document.getElementById('consstatus').textContent=''; document.getElementById('consmodal').classList.add('on'); }
+function closeConsolidate(){ document.getElementById('consmodal').classList.remove('on'); }
+function openInClaude(){ const t=document.getElementById('consprompt').value; window.open('https://claude.ai/new?q='+encodeURIComponent(t),'_blank'); }
+function copyConsPrompt(btn){ const ta=document.getElementById('consprompt'); const done=()=>{btn.textContent='✓ Copied';setTimeout(()=>btn.textContent='📋 Copy',1500);}; if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value).then(done).catch(()=>{ta.select();done();});}else{ta.select();try{document.execCommand('copy');}catch(e){}done();} }
+function parseConsReply(raw){
+  raw=raw.replace(/```json/gi,'').replace(/```/g,'').trim();
+  try{ const d=JSON.parse(raw); return Array.isArray(d)?d:(Array.isArray(d.projects)?d.projects:null); }catch(e){}
+  const a=raw.indexOf('['), b=raw.lastIndexOf(']'); if(a>=0&&b>a){ try{ const d=JSON.parse(raw.slice(a,b+1)); return Array.isArray(d)?d:null; }catch(e){} }
+  return null;
+}
+function applyConsReply(){
+  const raw=document.getElementById('consreply').value.trim();
+  const st=(m,c)=>{const e=document.getElementById('consstatus');e.textContent=m;e.className='spstatus '+(c||'');};
+  if(!raw){st('Paste Claude’s reply first.','bad');return;}
+  const data=parseConsReply(raw);
+  if(!data){st('Couldn’t read that — paste the full JSON Claude returned (it starts with [ ).','bad');return;}
+  let n=0;
+  data.forEach(u=>{ const p=P(u.id); if(!p)return; if(!(u.wholeft||u.next))return; // need real content
+    if(u.wholeft!=null)p.summary=clean(u.wholeft);
+    if(u.next)p.next=clean(u.next);
+    if(u.openq!=null)p.openq=clean(u.openq);
+    if(u.decisions!=null)p.decisions=clean(u.decisions);
+    if(u.why!=null)p.why=clean(u.why);
+    // mark ONLY the notes we actually sent for THIS project (fixes data-loss bug)
+    _consBatch.filter(x=>x.pid===p.id).forEach(x=>{ x.note.c=true; });
+    sync('projects',p); n++;
+  });
+  persist(); render();
+  st('Updated '+n+' project'+(n!==1?'s':'')+'. Raw notes kept and marked distilled.','ok');
+  toast('Memory updated'); _consBatch=[];
+  setTimeout(closeConsolidate,1200);
+}
+
+/* ===================== end-of-day shutdown ===================== */
+function openShutdown(){ const today=STATE.projects.filter(p=>p.focus&&isActive(p)); const b=document.getElementById('eodbody');
+  if(!today.length){ b.innerHTML='<p class="gintro">No projects starred for today. Star what you worked on (Now or Projects) and the wrap-up will ask for each one’s next step.</p>'; }
+  else { b.innerHTML=today.map(p=>`<div class="eodrow"><span class="en">${esc(p.name)}</span><input class="ei" data-id="${p.id}" value="${esc(p.next)}" placeholder="first thing to do when you come back…"></div>`).join(''); }
+  document.getElementById('eodmodal').classList.add('on');
+}
+function closeShutdown(){ document.getElementById('eodmodal').classList.remove('on'); }
+function saveShutdown(){ document.querySelectorAll('#eodbody .ei').forEach(inp=>{ const p=P(inp.dataset.id); if(!p)return; const v=clean(inp.value); if(v&&v!==p.next){ p.next=v; p.notes.push({d:todayISO,t:'EOD — next: '+v,c:false}); } p.updated=todayISO; p.focus=false; sync('projects',p); }); persist(); closeShutdown(); render(); toast('Wrapped up. Tomorrow-you is set. 🌙'); }
+
+/* ===================== data tab ===================== */
+function exportData(){ const blob=new Blob([JSON.stringify(STATE,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='my-projects-backup.json'; a.click(); toast('Backup downloaded'); }
+function importData(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const s=JSON.parse(r.result); if(!Array.isArray(s.projects))throw 0; STATE=s; normalize(); persist(); render(); toast('Imported ✓'); }catch(_){ toast('Could not read that file — needs a backup exported from here.'); } }; r.readAsText(f); e.target.value=''; }
+function resetData(){ if(!confirm('Reset to the sample data? Your current entries will be lost.'))return; STATE=JSON.parse(JSON.stringify(SAMPLE)); normalize(); persist(); render(); toast('Reset to sample'); }
+function spStatus(m,c){const e=document.getElementById('spstatus');if(e){e.textContent=m;e.className='spstatus '+(c||'');}}
+function prefillCfg(){ const c=document.getElementById('cfgClient'); if(!c)return; c.value=CONFIG.clientId||''; document.getElementById('cfgTenant').value=CONFIG.tenantId||''; document.getElementById('cfgSite').value=CONFIG.siteHost?('https://'+CONFIG.siteHost+(CONFIG.sitePath||'')):''; }
+function saveAndConnect(){ const clientId=clean(document.getElementById('cfgClient').value),tenantId=clean(document.getElementById('cfgTenant').value),siteLink=clean(document.getElementById('cfgSite').value); if(!clientId||!tenantId||!siteLink){spStatus('Fill in all three boxes first.','bad');return;} let host='',path=''; try{const u=new URL(siteLink);host=u.hostname;path=u.pathname.replace(/\/$/,'');}catch(_){spStatus('That site link doesn’t look like a web address.','bad');return;} CONFIG=Object.assign(CONFIG,{clientId,tenantId,siteHost:host,sitePath:path}); saveCfg(CONFIG); SP_ON=true;_msal=null;_siteId=null;_listId={};SP_READY=false; spConnectAndLoad(); }
+function disconnectSP(){ try{localStorage.removeItem(CFGKEY);}catch(e){} CONFIG.clientId="";SP_ON=false;SP_READY=false; const b=document.getElementById('spbadge');if(b){b.textContent='Local mode';b.classList.remove('on');} spStatus('Disconnected — saving in this browser only.',''); }
+function openGuide(){document.getElementById('guidemodal').classList.add('on');}
+function closeGuide(){document.getElementById('guidemodal').classList.remove('on');}
+async function spConnectAndLoad(){ if(!SP_ON){spStatus('Enter your codes first.','bad');return;} try{ spStatus('Connecting…',''); await spConnect(); const remote=await SP.loadAll();
+  // merge: keep local memory if a remote item somehow lacks it (don't clobber notes)
+  STATE=remote; normalize(); persist(); render();
+  spStatus('✓ Connected. Loaded '+STATE.projects.length+' projects from SharePoint.','ok'); const b=document.getElementById('spbadge');if(b){b.textContent='Connected';b.classList.add('on');} toast('Connected to SharePoint'); }catch(e){ spStatus('✕ '+e.message,'bad'); } }
+
+/* ===================== boot + keyboard ===================== */
+function render(){ if(TAB==='now')renderNow(); else if(TAB==='projects')renderProjects(); else if(TAB==='inbox')renderInbox();
+  document.getElementById('dumpcount').textContent=STATE.dump.length||'';
+  document.getElementById('projcount').textContent=STATE.projects.filter(isActive).length||'';
+  const attn=STATE.projects.filter(needsAttention).length; const pj=document.getElementById('projcount'); /* keep simple */ }
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ closeCapture();closeConsolidate();closeShutdown();closeGuide(); return; }
+  const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)||document.activeElement.isContentEditable;
+  if(!typing && (e.key==='n'||e.key==='N') && !e.metaKey && !e.ctrlKey){ e.preventDefault(); openCapture(); }
+});
+function boot(){ prefillCfg(); render(); const b=document.getElementById('spbadge'); if(SP_ON){ if(b)b.textContent='Configured'; spConnectAndLoad(); } else if(b){ b.textContent='Local mode'; } bootFileSync(); }
+boot();
+</script>
+</body></html>
