@@ -104,6 +104,10 @@ button{font-family:inherit;cursor:pointer}
 .pdetail{display:none;padding:0 15px 15px;border-top:1px solid var(--line2)}
 .pdetail.on{display:block}
 .mfield{margin-top:11px}
+.mrow2{display:flex;gap:14px;flex-wrap:wrap}.mrow2 .mfield{flex:1;min-width:160px}
+.mfield .val[contenteditable]{border-bottom:1px dashed transparent;transition:border-color .15s}
+.mfield .val[contenteditable]:hover{border-bottom-color:var(--line,#dde1ea)}
+.mfield .val[contenteditable]:focus{outline:none;border-bottom-color:var(--accent)}
 .mfield .lab{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:3px}
 .mfield .val{font-size:.9rem;color:#36405a;min-height:1.15em}
 .mfield .val.big{font-size:.95rem}
@@ -645,6 +649,10 @@ function projCard(p){ const q=daysQuiet(p); const dorm=needsAttention(p)||(isAct
       <span class="meta">${quietBadge}</span>
     </div>
     <div class="pdetail" id="pd-${p.id}">
+      <div class="mrow2">
+        <div class="mfield"><span class="lab">Project name</span><div class="val big" id="nm-${p.id}" contenteditable data-ph="name this project…" onblur="editName('${p.id}',this.innerText)">${esc(p.name)}</div></div>
+        <div class="mfield"><span class="lab">Area / category <span style="font-weight:600;color:var(--muted)">· optional</span></span><div class="val" contenteditable data-ph="e.g. Marketing, Ops…" onblur="editField('${p.id}','area',this.innerText)">${esc(p.area)}</div></div>
+      </div>
       <div class="mfield"><span class="lab">Where I left off ${w.fromNote?'<span style="font-weight:600;color:var(--muted)">· from your last note</span>':''}</span>
         <div class="val big" contenteditable data-ph="1–3 lines on where this stands…" onblur="editField('${p.id}','summary',this.innerText)">${esc(p.summary)}</div></div>
       <div class="mfield"><span class="lab">▶ Next action</span><div class="val" contenteditable data-ph="the single next step…" onblur="editField('${p.id}','next',this.innerText)">${esc(p.next)}</div></div>
@@ -664,13 +672,15 @@ function projCard(p){ const q=daysQuiet(p); const dorm=needsAttention(p)||(isAct
 }
 function toggleDetail(id,e){ if(e&&e.target&&e.target.isContentEditable)return; const d=document.getElementById('pd-'+id); if(d)d.classList.toggle('on'); }
 function editField(id,f,v){ const p=P(id); if(!p)return; v=(f==='summary'||f==='openq'||f==='decisions'||f==='why')?clean(v):clean(v); if(p[f]===v)return; p[f]=v; p.updated=todayISO; persist(); sync('projects',p); if(TAB==='now')renderNow(); }
+function editName(id,v){ const p=P(id); if(!p)return; v=clean(v)||'Untitled'; if(p.name===v)return; p.name=v; p.updated=todayISO; persist(); sync('projects',p);
+  const card=document.getElementById('pd-'+id); if(card){ const t=card.closest('.pcard'); const nm=t&&t.querySelector('.prow .nm'); if(nm)nm.textContent=v; } if(TAB==='now')renderNow(); }
 function cycleStatus(id){ const p=P(id); p.status=STATUSES[(STATUSES.indexOf(p.status)+1)%STATUSES.length]; p.updated=todayISO; persist(); sync('projects',p); render(); }
 function setStatus(id,s){ const p=P(id); p.status=s; if(s==='Done')p.focus=false; p.updated=todayISO; persist(); sync('projects',p); render(); toast(p.name+' → '+s); }
 function cyclePrio(id){ const p=P(id); p.prio=PRIOS[(PRIOS.indexOf(p.prio)+1)%PRIOS.length]; persist(); sync('projects',p); render(); }
 function toggleFocus(id){ const p=P(id); p.focus=!p.focus; if(p.focus){p.updated=todayISO;} persist(); sync('projects',p); render(); }
 function snooze(id,days){ const p=P(id); p.snoozeUntil=days>0?addDaysISO(days):''; persist(); sync('projects',p); render(); toast(days>0?(p.name+' snoozed to '+fmt(p.snoozeUntil)):'Awake'); }
 function delProject(id){ const p=P(id); if(!p)return; if(!confirm('Delete "'+p.name+'"? This removes its notes too.'))return; syncDel('projects',p); STATE.projects=STATE.projects.filter(x=>x.id!==id); persist(); render(); toast('Deleted'); }
-function addProject(){ const np={id:pid(),focus:false,name:"New project",area:"",status:"Next up",prio:"md",next:"",target:"",updated:todayISO,summary:"",openq:"",decisions:"",why:"",snoozeUntil:"",notes:[]}; STATE.projects.unshift(np); persist(); sync('projects',np); renderProjects(); setTimeout(()=>{const d=document.getElementById('pd-'+np.id);if(d)d.classList.add('on');},30); toast('Added — open it to fill in the details'); }
+function addProject(){ const np={id:pid(),focus:false,name:"New project",area:"",status:"Next up",prio:"md",next:"",target:"",updated:todayISO,summary:"",openq:"",decisions:"",why:"",snoozeUntil:"",notes:[]}; STATE.projects.unshift(np); persist(); sync('projects',np); renderProjects(); setTimeout(()=>{const d=document.getElementById('pd-'+np.id);if(d)d.classList.add('on'); const nm=document.getElementById('nm-'+np.id); if(nm){nm.focus(); const r=document.createRange(); r.selectNodeContents(nm); const s=getSelection(); s.removeAllRanges(); s.addRange(r);}},40); toast('Added — type the project name'); }
 
 /* ===================== INBOX (brain dump) ===================== */
 function renderInbox(){
